@@ -286,18 +286,11 @@ Instructions:
             listView1.Items.Add(summaryItem);
 
             var summaryItemExt = new ListViewItem("");
-            summaryItemExt.SubItems.Add($"Response Time: {avgResponse:F1}");
+            summaryItemExt.SubItems.Add($"Avg Response Time: {avgResponse:F1}");
             summaryItemExt.SubItems.Add($"Context Switches: {results.Sum(r => r.NumTimesSwitched)}");
-            summaryItemExt.SubItems.Add($"Distint Procs Served: {AverageProcessesServedPerUnitTime:F4} per");
-            summaryItemExt.SubItems.Add($"Sqrt of Total Time: {TimeIntervalSize}"); 
+            summaryItemExt.SubItems.Add($"Distint Procs Served: {AverageProcessesServedPerUnitTime:F4} per >");
+            summaryItemExt.SubItems.Add($"Sqrt of Total Time: {TimeIntervalSize} units"); 
             listView1.Items.Add(summaryItemExt);
-
-            // TODO: STUDENTS - Add CSV export functionality for results data
-            // Create a "Export Results" button in the results panel to save:
-            // - Individual process results (what's shown in listView1)
-            // - Performance metrics summary for each algorithm tested
-            // Reference the SaveData_Click() method above to learn CSV file handling
-            // This will help you create tables/charts for your project report
         }
 
         /// <summary>
@@ -1118,6 +1111,86 @@ Instructions:
                 ShowPanel(resultsPanel);
                 sidePanel.Height = btnDashBoard.Height;
                 sidePanel.Top = btnDashBoard.Top;
+            }
+        }
+
+        private void SaveAllResultsButton_Click(object sender, EventArgs e)
+        {
+            var allResults = new List<(string AlgorithmName, List<SchedulingResult> Results)>();
+            double AverageProcessesServedPerUnitTime = 0.0;
+            double TimeIntervalSize = 0.0;
+
+            for (int i = 0; i < 6; i++)
+            {
+                List<SchedulingResult> results = null;
+                string algorithmName = "";
+
+                switch (i)
+                {
+                    case 0:
+                        results = CPUAlgorithms.RunFCFSAlgorithm(GetProcessDataFromGrid());
+                        DisplaySchedulingResults(results, "First Come First Serve");
+                        algorithmName = "First Come First Serve";
+                        break;
+                    case 1:
+                        results = CPUAlgorithms.RunSJFAlgorithm(GetProcessDataFromGrid());
+                        DisplaySchedulingResults(results, "Shortest Job First");
+                        algorithmName = "Shortest Job First";
+                        break;
+                    case 2:
+                        results = CPUAlgorithms.RunPriorityAlgorithm(GetProcessDataFromGrid());
+                        DisplaySchedulingResults(results, "Priority Scheduling");
+                        algorithmName = "Priority Scheduling";
+                        break;
+                    case 3:
+                        results = CPUAlgorithms.RunRoundRobinAlgorithm(GetProcessDataFromGrid(), 4);
+                        DisplaySchedulingResults(results, "Round Robin (Quantum = 4)");
+                        algorithmName = "Round Robin (Quantum = 4)";
+                        break;
+                    case 4:
+                        results = CPUAlgorithms.RunMLFQAlgorithm(GetProcessDataFromGrid());
+                        DisplaySchedulingResults(results, "Multilevel Feedback Queue");
+                        algorithmName = "Multilevel Feedback Queue";
+                        break;
+                    case 5:
+                        results = CPUAlgorithms.RunCFSAlgorithm(GetProcessDataFromGrid());
+                        DisplaySchedulingResults(results, "Completely Fair Scheduler");
+                        algorithmName = "Completely Fair Scheduler";
+                        break;
+                }
+
+                DisplaySchedulingResults(results, algorithmName);
+                allResults.Add((algorithmName, results));
+            }
+
+            using (var saveDialog = new SaveFileDialog())
+            {
+                saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+                saveDialog.DefaultExt = "csv";
+                saveDialog.FileName = "AlgoComparisonData.csv";
+                saveDialog.Title = "Save Algorithm Performance Data";
+
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    using (var writer = new System.IO.StreamWriter(saveDialog.FileName))
+                    {
+                        writer.WriteLine("Algo Name,Avg Waiting Time,Avg Turnaround Time,Avg Response Time,CPU Utilization (%),Throughput (procs/sec),Context Switches,Distinct Procs Served,Time Interval Size");
+
+                        foreach (var (algorithmName, results) in allResults)
+                        {
+                            var avgWaiting = results.Average(r => r.WaitingTime);
+                            var avgTurnaround = results.Average(r => r.TurnaroundTime);
+                            var avgResponse = PerformanceMetrics.CalculateAverageResponseTime(results);
+                            var cpuUtilization = PerformanceMetrics.CalculateCPUUtilization(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
+                            var throughput = PerformanceMetrics.CalculateThroughput(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
+                            var overview = (SchedulingOverview)results.First();
+                            writer.WriteLine($"{algorithmName},{avgWaiting:F1},{avgTurnaround:F1},{avgResponse:F1},{cpuUtilization:F1},{throughput:F4},{results.Sum(r => r.NumTimesSwitched)},{overview.AverageProcessesServedPerUnitTime:F4},{overview.NumTimesSwitched}");
+                        }
+                    }
+
+                    MessageBox.Show($"All process data saved successfully to:\n{saveDialog.FileName}",
+                                    "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
     }

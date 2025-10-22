@@ -40,22 +40,25 @@ public static class CPUAlgorithms
             var finishTime = startTime + process.BurstTime;
             var waitingTime = startTime - process.ArrivalTime;
             var turnaroundTime = finishTime - process.ArrivalTime;
+            
+            processesSeenInInterval.Add(prevProcess);
+
+            unitsPassedSinceInterval += finishTime - prevTime;
+            if (unitsPassedSinceInterval >= intervalSize)
+            {
+                numIntervalsSeen++;
+                overview.AverageProcessesServedPerUnitTime =
+                    ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                    processesSeenInInterval.Count) / numIntervalsSeen;
+                processesSeenInInterval.Clear();
+                unitsPassedSinceInterval = unitsPassedSinceInterval % intervalSize;
+            }
 
             if (prevProcess != null && prevProcess != process.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
-                unitsPassedSinceInterval += currentTime - prevTime;
-                if (unitsPassedSinceInterval >= intervalSize)
-                {
-                    numIntervalsSeen++;
-                    overview.AverageProcessesServedPerUnitTime =
-                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
-                    processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
-                }
             }
+            
             prevTime = currentTime;
             prevProcess = process.ProcessID;
 
@@ -114,6 +117,7 @@ public static class CPUAlgorithms
 
             // Select process with shortest burst time
             var nextProcess = availableProcesses.OrderBy(p => p.BurstTime).ThenBy(p => p.ArrivalTime).First();
+            processesSeenInInterval.Add(nextProcess.ProcessID);
 
             var startTime = Math.Max(currentTime, nextProcess.ArrivalTime);
             var finishTime = startTime + nextProcess.BurstTime;
@@ -123,18 +127,19 @@ public static class CPUAlgorithms
             if (prevProcess != null && prevProcess != nextProcess.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
-                unitsPassedSinceInterval += currentTime - prevTime;
-                if (unitsPassedSinceInterval >= intervalSize)
-                {
-                    numIntervalsSeen++;
-                    overview.AverageProcessesServedPerUnitTime =
-                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
-                    processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
-                }
             }
+
+            unitsPassedSinceInterval += currentTime - prevTime;
+            if (unitsPassedSinceInterval >= intervalSize)
+            {
+                numIntervalsSeen++;
+                overview.AverageProcessesServedPerUnitTime =
+                    ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                    processesSeenInInterval.Count) / numIntervalsSeen;
+                processesSeenInInterval.Clear();
+                unitsPassedSinceInterval = unitsPassedSinceInterval % intervalSize;
+            }
+
             prevProcess = nextProcess.ProcessID;
 
             results.Add(new SchedulingResult
@@ -193,6 +198,7 @@ public static class CPUAlgorithms
 
             // Select process with highest priority (highest number)
             var nextProcess = availableProcesses.OrderByDescending(p => p.Priority).ThenBy(p => p.ArrivalTime).First();
+            processesSeenInInterval.Add(nextProcess.ProcessID);
 
             var startTime = Math.Max(currentTime, nextProcess.ArrivalTime);
             var finishTime = startTime + nextProcess.BurstTime;
@@ -202,16 +208,15 @@ public static class CPUAlgorithms
             if (prevProcess != null && prevProcess != nextProcess.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
                 unitsPassedSinceInterval += currentTime - prevTime;
                 if (unitsPassedSinceInterval >= intervalSize)
                 {
                     numIntervalsSeen++;
                     overview.AverageProcessesServedPerUnitTime =
                         ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                        processesSeenInInterval.Count) / numIntervalsSeen;
                     processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                    unitsPassedSinceInterval = unitsPassedSinceInterval % intervalSize;
                 }
             }
             prevTime = currentTime;
@@ -302,20 +307,20 @@ public static class CPUAlgorithms
 
             var currentProcess = processQueue.Dequeue();
             var result = processResults[currentProcess.ProcessID];
+            processesSeenInInterval.Add(currentProcess.ProcessID);
 
             if (prevProcess != null && prevProcess != currentProcess.ProcessID)
             {
                 processResults[prevProcess].NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
                 unitsPassedSinceInterval += currentTime - prevTime;
                 if (unitsPassedSinceInterval >= intervalSize)
                 {
                     numIntervalsSeen++;
                     overview.AverageProcessesServedPerUnitTime =
                         ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                        processesSeenInInterval.Count) / numIntervalsSeen;
                     processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                    unitsPassedSinceInterval = unitsPassedSinceInterval % intervalSize;
                 }
             }
             prevTime = currentTime;
@@ -424,22 +429,11 @@ public static class CPUAlgorithms
 
             var process = queues[level].Dequeue();
             var result = results[process.ProcessID];
+            processesSeenInInterval.Add(process.ProcessID);
 
             if (prevProcess != null && prevProcess != process.ProcessID)
             {
                 results[prevProcess].NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
-                unitsPassedSinceInterval += currentTime - prevTime;
-                if (unitsPassedSinceInterval >= intervalSize)
-                {
-                    numIntervalsSeen++;
-                    overview.AverageProcessesServedPerUnitTime =
-                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
-                    // reset for next interval
-                    processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
-                }
             }
             prevProcess = process.ProcessID;
 
@@ -450,7 +444,20 @@ public static class CPUAlgorithms
             int execTime = Math.Min(quantums[level], remainingBurst[process.ProcessID]);
             currentTime += execTime;
             remainingBurst[process.ProcessID] -= execTime;
+            
+            unitsPassedSinceInterval += execTime;
 
+            if (unitsPassedSinceInterval >= intervalSize)
+            {
+                numIntervalsSeen++;
+                overview.AverageProcessesServedPerUnitTime =
+                    ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                    processesSeenInInterval.Count) / numIntervalsSeen;
+
+                processesSeenInInterval.Clear();
+                unitsPassedSinceInterval %= intervalSize;
+            }
+            
             // Add newly arrived processes during this time
             while (waitingList.Count > 0 && waitingList[0].ArrivalTime <= currentTime)
             {
@@ -566,22 +573,13 @@ public static class CPUAlgorithms
             if (popped == null) break;
             var (procV, pid, procData) = popped.Value;
 
+            processesSeenInInterval.Add(pid);
+
             if (prevProcess != null && prevProcess != pid)
             {
                 results[prevProcess].NumTimesSwitched++;
-                processesSeenInInterval.Add(prevProcess);
-                unitsPassedSinceInterval += (int)(currentTime - prevTime);
-                if (unitsPassedSinceInterval >= intervalSize)
-                {
-                    numIntervalsSeen++;
-                    overview.AverageProcessesServedPerUnitTime =
-                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
-                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
-                    // reset for next interval
-                    processesSeenInInterval.Clear();
-                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
-                }
             }
+
             prevProcess = pid;
 
             var result = results[pid];
@@ -605,6 +603,19 @@ public static class CPUAlgorithms
             currentTime += exec;
             remaining[pid] -= exec;
 
+            unitsPassedSinceInterval += exec;
+
+            if (unitsPassedSinceInterval >= intervalSize)
+            {
+                numIntervalsSeen++;
+                overview.AverageProcessesServedPerUnitTime =
+                    ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                    processesSeenInInterval.Count) / numIntervalsSeen;
+
+                processesSeenInInterval.Clear();
+                unitsPassedSinceInterval %= intervalSize;
+            }
+
             // increment vruntime for this process
             // delta_vruntime = exec * (NICE_0_LOAD / weight)
             // this means heavier (larger weight) processes accumulate vruntime slower, getting more CPU share.
@@ -622,6 +633,7 @@ public static class CPUAlgorithms
 
             if (remaining[pid] == 0)
             {
+                remaining.Remove(pid);
                 result.FinishTime = (int)currentTime;
                 result.TurnaroundTime = result.FinishTime - result.ArrivalTime;
                 result.WaitingTime = result.TurnaroundTime - result.BurstTime;

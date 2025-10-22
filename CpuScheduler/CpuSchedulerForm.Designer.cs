@@ -426,6 +426,7 @@
             this.algorithmButtonPanel.Controls.Add(this.btnRoundRobin);
             this.algorithmButtonPanel.Controls.Add(this.btnMLFQ);
             this.algorithmButtonPanel.Controls.Add(this.btnCFS);
+            this.algorithmButtonPanel.Controls.Add(this.btnCompareAll);
             this.algorithmButtonPanel.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
             this.algorithmButtonPanel.Location = new System.Drawing.Point(20, 450);
             this.algorithmButtonPanel.Name = "algorithmButtonPanel";
@@ -556,9 +557,9 @@
             this.btnCompareAll.Name = "btnCompareAll";
             this.btnCompareAll.Size = new System.Drawing.Size(150, 60);
             this.btnCompareAll.TabIndex = 10;
-            this.btnCompareAll.Text = "Compare All Algorithms";
+            this.btnCompareAll.Text = "Compare All Algorithms & Save to CSV";
             this.btnCompareAll.UseVisualStyleBackColor = false;
-            // this.btnCompareAll.Click += new System.EventHandler(this.CompareAllButton_Click);
+            this.btnCompareAll.Click += new System.EventHandler(this.SaveAllResultsButton_Click);
             // 
             // txtProcess
             // 
