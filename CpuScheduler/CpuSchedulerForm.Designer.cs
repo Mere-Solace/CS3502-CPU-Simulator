@@ -62,6 +62,7 @@
             this.btnFCFS = new System.Windows.Forms.Button();
             this.btnMLFQ = new System.Windows.Forms.Button();
             this.btnCFS = new System.Windows.Forms.Button();
+            this.btnCompareAll = new System.Windows.Forms.Button();
             this.txtProcess = new System.Windows.Forms.TextBox();
             this.labelProcess = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
@@ -509,9 +510,9 @@
             this.btnFCFS.Text = "FCFS";
             this.btnFCFS.UseVisualStyleBackColor = false;
             this.btnFCFS.Click += new System.EventHandler(this.FirstComeFirstServeButton_Click);
-           //
-           // btnMLFQ
-           //
+            //
+            // btnMLFQ
+            //
             this.btnMLFQ.Enabled = true;
             this.btnMLFQ.BackColor = System.Drawing.Color.Beige;
             this.btnMLFQ.Cursor = System.Windows.Forms.Cursors.Hand;
@@ -526,9 +527,9 @@
             this.btnMLFQ.UseVisualStyleBackColor = false;
             this.btnMLFQ.Click += new System.EventHandler(this.MultilevelFeedbackQueueButton_Click);
            
-           //
-           // btnCFS
-           //
+            //
+            // btnCFS
+            //
             this.btnCFS.Enabled = true;
             this.btnCFS.BackColor = System.Drawing.Color.Beige;
             this.btnCFS.Cursor = System.Windows.Forms.Cursors.Hand;
@@ -542,7 +543,22 @@
             this.btnCFS.Text = "CFS";
             this.btnCFS.UseVisualStyleBackColor = false;
             this.btnCFS.Click += new System.EventHandler(this.CompletelyFairSchedulerButton_Click);
-           
+            //
+            // btnCompareAll
+            //
+            this.btnCompareAll.Enabled = true;
+            this.btnCompareAll.BackColor = System.Drawing.Color.AliceBlue;
+            this.btnCompareAll.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCompareAll.FlatAppearance.MouseOverBackColor = System.Drawing.Color.PaleGreen;
+            this.btnCompareAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCompareAll.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCompareAll.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
+            this.btnCompareAll.Name = "btnCompareAll";
+            this.btnCompareAll.Size = new System.Drawing.Size(150, 60);
+            this.btnCompareAll.TabIndex = 10;
+            this.btnCompareAll.Text = "Compare All Algorithms";
+            this.btnCompareAll.UseVisualStyleBackColor = false;
+            // this.btnCompareAll.Click += new System.EventHandler(this.CompareAllButton_Click);
             // 
             // txtProcess
             // 
@@ -646,6 +662,7 @@
         private System.Windows.Forms.Button btnFCFS;
         private System.Windows.Forms.Button btnMLFQ;
         private System.Windows.Forms.Button btnCFS;
+        private System.Windows.Forms.Button btnCompareAll;
         public System.Windows.Forms.TextBox txtProcess;
         private System.Windows.Forms.Label labelProcess;
         private System.Windows.Forms.Panel sidePanel;

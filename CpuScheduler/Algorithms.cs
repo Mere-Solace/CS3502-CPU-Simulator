@@ -2,7 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UtilClasses;
+using Utilities;
+using System.Windows.Forms;
 
 namespace CpuScheduler;
 public static class CPUAlgorithms
@@ -13,6 +14,7 @@ public static class CPUAlgorithms
     /// </summary>
     public static List<SchedulingResult> RunFCFSAlgorithm(List<ProcessData> processes)
     {
+        string prevProcess = null;
         var results = new List<SchedulingResult>();
         var currentTime = 0;
 
@@ -25,7 +27,13 @@ public static class CPUAlgorithms
             var finishTime = startTime + process.BurstTime;
             var waitingTime = startTime - process.ArrivalTime;
             var turnaroundTime = finishTime - process.ArrivalTime;
-
+            
+            if (prevProcess != null && prevProcess != process.ProcessID)
+            {
+                results.Last().NumTimesSwitched++;
+            }
+            prevProcess = process.ProcessID;
+            
             results.Add(new SchedulingResult
             {
                 ProcessID = process.ProcessID,
@@ -49,6 +57,8 @@ public static class CPUAlgorithms
     /// </summary>
     public static List<SchedulingResult> RunSJFAlgorithm(List<ProcessData> processes)
     {
+        string prevProcess = null;
+
         var results = new List<SchedulingResult>();
         var currentTime = 0;
         var remainingProcesses = processes.ToList();
@@ -57,7 +67,7 @@ public static class CPUAlgorithms
         {
             // Get processes that have arrived by current time
             var availableProcesses = remainingProcesses.Where(p => p.ArrivalTime <= currentTime).ToList();
-
+            
             if (availableProcesses.Count == 0)
             {
                 // No process has arrived yet, jump to next arrival time
@@ -72,6 +82,12 @@ public static class CPUAlgorithms
             var finishTime = startTime + nextProcess.BurstTime;
             var waitingTime = startTime - nextProcess.ArrivalTime;
             var turnaroundTime = finishTime - nextProcess.ArrivalTime;
+
+            if (prevProcess != null && prevProcess != nextProcess.ProcessID)
+            {
+                results.Last().NumTimesSwitched++;
+            }
+            prevProcess = nextProcess.ProcessID;
 
             results.Add(new SchedulingResult
             {
@@ -97,6 +113,8 @@ public static class CPUAlgorithms
     /// </summary>
     public static List<SchedulingResult> RunPriorityAlgorithm(List<ProcessData> processes)
     {
+        string prevProcess = null;
+
         var results = new List<SchedulingResult>();
         var currentTime = 0;
         var remainingProcesses = processes.ToList();
@@ -120,6 +138,12 @@ public static class CPUAlgorithms
             var finishTime = startTime + nextProcess.BurstTime;
             var waitingTime = startTime - nextProcess.ArrivalTime;
             var turnaroundTime = finishTime - nextProcess.ArrivalTime;
+            
+            if (prevProcess != null && prevProcess != nextProcess.ProcessID)
+            {
+                results.Last().NumTimesSwitched++;
+            }
+            prevProcess = nextProcess.ProcessID;
 
             results.Add(new SchedulingResult
             {
@@ -145,7 +169,7 @@ public static class CPUAlgorithms
     /// </summary>
     public static List<SchedulingResult> RunRoundRobinAlgorithm(List<ProcessData> processes, int quantumTime = 4)
     {
-        var results = new List<SchedulingResult>();
+        string prevProcess = null;
         var currentTime = 0;
         var processQueue = new Queue<ProcessData>();
         var processResults = new Dictionary<string, SchedulingResult>();
@@ -193,6 +217,12 @@ public static class CPUAlgorithms
 
             var currentProcess = processQueue.Dequeue();
             var result = processResults[currentProcess.ProcessID];
+            
+            if (prevProcess != null && prevProcess != currentProcess.ProcessID)
+            {
+                processResults[prevProcess].NumTimesSwitched++;
+            }
+            prevProcess = currentProcess.ProcessID;
 
             // Set start time if this is the first execution
             if (result.StartTime == -1)
@@ -233,6 +263,7 @@ public static class CPUAlgorithms
     // >*** Multilevel Feedback Queue Algorithm ***<
     public static List<SchedulingResult> RunMLFQAlgorithm(List<ProcessData> processes)
     {
+        string prevProcess = null;
         var results = new Dictionary<string, SchedulingResult>();
         var remainingBurst = new Dictionary<string, int>();
 
@@ -285,6 +316,12 @@ public static class CPUAlgorithms
             var process = queues[level].Dequeue();
             var result = results[process.ProcessID];
 
+            if (prevProcess != null && prevProcess != process.ProcessID)
+            {
+                results[prevProcess].NumTimesSwitched++;
+            }
+            prevProcess = process.ProcessID;
+
             // Mark first execution
             if (result.StartTime == -1)
                 result.StartTime = currentTime;
@@ -320,6 +357,7 @@ public static class CPUAlgorithms
     // >*** Completely Fair Scheduler Algorithm ***<
     public static List<SchedulingResult> RunCFSAlgorithm(List<ProcessData> processes)
     {
+        string prevProcess = null;
         const double NICE_0_LOAD = 1024.0; // CFS constant used to scale vruntime increments
         const int targetLatency = 20;      // target latency for the run queue (ms)
         var results = new Dictionary<string, SchedulingResult>();
@@ -394,6 +432,12 @@ public static class CPUAlgorithms
             if (popped == null) break;
             var (procV, pid, procData) = popped.Value;
 
+            if (prevProcess != null && prevProcess != pid)
+            {
+                results[prevProcess].NumTimesSwitched++;
+            }
+            prevProcess = pid;
+
             var result = results[pid];
             if (result.StartTime == -1)
                 result.StartTime = (int)currentTime;
@@ -443,7 +487,6 @@ public static class CPUAlgorithms
                 runqueue.Insert(vruntimeMap[pid], pid, procData);
             }
         }
-
         // return results ordered by StartTime (similar to your previous style)
         return results.Values.OrderBy(r => r.StartTime).ToList();
     }

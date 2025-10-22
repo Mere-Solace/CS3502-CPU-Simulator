@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
-using UtilClasses;
+using Utilities;
 using CpuScheduler;
 
 namespace CpuScheduler
@@ -264,25 +264,23 @@ Instructions:
             // Add summary statistics
             var avgWaiting = results.Average(r => r.WaitingTime);
             var avgTurnaround = results.Average(r => r.TurnaroundTime);
+            var cpuUtilization = PerformanceMetrics.CalculateCPUUtilization(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
+            var throughput = PerformanceMetrics.CalculateThroughput(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
+            var avgResponse = PerformanceMetrics.CalculateAverageResponseTime(results);
 
             var summaryItem = new ListViewItem("SUMMARY");
             summaryItem.SubItems.Add(algorithmName);
             summaryItem.SubItems.Add($"{results.Count} processes");
             summaryItem.SubItems.Add($"Avg Wait: {avgWaiting:F1}");
             summaryItem.SubItems.Add($"Avg Turn: {avgTurnaround:F1}");
-            summaryItem.SubItems.Add("");
-            summaryItem.SubItems.Add("");
+            summaryItem.SubItems.Add($"CPU Utilization: {cpuUtilization:F1}%");
+            summaryItem.SubItems.Add($"Throughput: {throughput:F4} processes/second");
             listView1.Items.Add(summaryItem);
 
-            // TODO: STUDENTS - Add performance metrics calculation and display here
-            // Required metrics for your project report:
-            //
-            // 1. Average Waiting Time (AWT) - sum of all waiting times / number of processes
-            // 2. Average Turnaround Time (ATT) - sum of all turnaround times / number of processes  
-            // 3. CPU Utilization (%) - (total burst time / total time) * 100
-            // 4. Throughput (processes/second) - number of processes / total time
-            // 5. Response Time (RT) [Optional] - time from arrival to first execution
-            // Display these metrics in the results view for comparison between algorithms
+            var summaryItemExt = new ListViewItem("");
+            summaryItemExt.SubItems.Add($"Response Time: {avgResponse:F1} time units");
+            summaryItemExt.SubItems.Add($"Context Switches: {results.Sum(r => r.NumTimesSwitched)}");
+            listView1.Items.Add(summaryItemExt);
 
             // TODO: STUDENTS - Add CSV export functionality for results data
             // Create a "Export Results" button in the results panel to save:

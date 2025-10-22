@@ -1,8 +1,9 @@
 using System.Security.Cryptography.X509Certificates;
-using UtilClasses;
+using Utilities;
 
 public enum RBColor { Red, Black }
 
+#nullable enable
 public class RBNode
 {
     public (double vruntime, string pid) Key;
@@ -200,6 +201,15 @@ public class RBTree
 
     private void DeleteFixup(RBNode? x)
     {
+        // Defensive: if x is null we can end up in an infinite loop below when the
+        // tree root is non-null. Use the root as a sentinel or bail out when the
+        // tree is empty. This mirrors using a NIL sentinel node in more
+        // complete implementations.
+        if (x == null)
+        {
+            if (root == null) return;
+            x = root;
+        }
         while (x != root && (x == null || x.Color == RBColor.Black))
         {
             if (x == x?.Parent?.Left)
@@ -278,3 +288,4 @@ public class RBTree
         return string.CompareOrdinal(a.pid, b.pid);
     }
 }
+#nullable disable
