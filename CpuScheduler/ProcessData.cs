@@ -24,6 +24,11 @@ public class SchedulingResult
     public int NumTimesSwitched { get; set; }
 }
 
+public class SchedulingOverview : SchedulingResult
+{
+    public double AverageProcessesServedPerUnitTime { get; set; }
+}
+
 public static class PerformanceMetrics
 {
     public static double CalculateCPUUtilization(List<SchedulingResult> results, int totalTime)
@@ -34,7 +39,7 @@ public static class PerformanceMetrics
 
     public static double CalculateThroughput(List<SchedulingResult> results, int totalTime)
     {
-        return (double) results.Count / totalTime;
+        return (double)results.Count / totalTime;
     }
 
     public static double CalculateAverageResponseTime(List<SchedulingResult> results)

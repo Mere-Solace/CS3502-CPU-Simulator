@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Utilities;
 using System.Windows.Forms;
+using System.Security.Policy;
 
 namespace CpuScheduler;
+
 public static class CPUAlgorithms
 {
+    #region FCFS
     /// <summary>
     /// STUDENTS: Example FCFS algorithm implementation using DataGrid data
     /// This replaces the old prompt-based system with direct data access
@@ -16,7 +19,17 @@ public static class CPUAlgorithms
     {
         string prevProcess = null;
         var results = new List<SchedulingResult>();
+        var overview = new SchedulingOverview();
+        results.Add(overview);
+        overview.StartTime = -1;
         var currentTime = 0;
+        int prevTime = 0;
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(processes.Sum(p => p.BurstTime));
+        overview.NumTimesSwitched = intervalSize;
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         // Sort by arrival time for FCFS
         var sortedProcesses = processes.OrderBy(p => p.ArrivalTime).ToList();
@@ -27,13 +40,25 @@ public static class CPUAlgorithms
             var finishTime = startTime + process.BurstTime;
             var waitingTime = startTime - process.ArrivalTime;
             var turnaroundTime = finishTime - process.ArrivalTime;
-            
+
             if (prevProcess != null && prevProcess != process.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += currentTime - prevTime;
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
+            prevTime = currentTime;
             prevProcess = process.ProcessID;
-            
+
             results.Add(new SchedulingResult
             {
                 ProcessID = process.ProcessID,
@@ -50,7 +75,9 @@ public static class CPUAlgorithms
 
         return results;
     }
+    #endregion
 
+    #region SJF
     /// <summary>
     /// STUDENTS: SJF algorithm implementation using DataGrid data
     /// Shortest Job First - selects process with minimum burst time
@@ -60,14 +87,24 @@ public static class CPUAlgorithms
         string prevProcess = null;
 
         var results = new List<SchedulingResult>();
+        var overview = new SchedulingOverview();
+        results.Add(overview);
+        overview.StartTime = -1;
         var currentTime = 0;
+        int prevTime = 0;
         var remainingProcesses = processes.ToList();
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(processes.Sum(p => p.BurstTime));
+        overview.NumTimesSwitched = intervalSize;
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         while (remainingProcesses.Count > 0)
         {
             // Get processes that have arrived by current time
             var availableProcesses = remainingProcesses.Where(p => p.ArrivalTime <= currentTime).ToList();
-            
+
             if (availableProcesses.Count == 0)
             {
                 // No process has arrived yet, jump to next arrival time
@@ -86,6 +123,17 @@ public static class CPUAlgorithms
             if (prevProcess != null && prevProcess != nextProcess.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += currentTime - prevTime;
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
             prevProcess = nextProcess.ProcessID;
 
@@ -106,7 +154,9 @@ public static class CPUAlgorithms
 
         return results.OrderBy(r => r.StartTime).ToList();
     }
+    #endregion
 
+    #region Priority
     /// <summary>
     /// STUDENTS: Priority algorithm implementation using DataGrid data
     /// Higher priority number = higher priority (1 is lowest, higher numbers are higher priority)
@@ -116,8 +166,18 @@ public static class CPUAlgorithms
         string prevProcess = null;
 
         var results = new List<SchedulingResult>();
+        var overview = new SchedulingOverview();
+        results.Add(overview);
+        overview.StartTime = -1;
         var currentTime = 0;
+        int prevTime = 0;
         var remainingProcesses = processes.ToList();
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(processes.Sum(p => p.BurstTime));
+        overview.NumTimesSwitched = intervalSize;
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         while (remainingProcesses.Count > 0)
         {
@@ -138,11 +198,23 @@ public static class CPUAlgorithms
             var finishTime = startTime + nextProcess.BurstTime;
             var waitingTime = startTime - nextProcess.ArrivalTime;
             var turnaroundTime = finishTime - nextProcess.ArrivalTime;
-            
+
             if (prevProcess != null && prevProcess != nextProcess.ProcessID)
             {
                 results.Last().NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += currentTime - prevTime;
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
+            prevTime = currentTime;
             prevProcess = nextProcess.ProcessID;
 
             results.Add(new SchedulingResult
@@ -162,7 +234,9 @@ public static class CPUAlgorithms
 
         return results.OrderBy(r => r.StartTime).ToList();
     }
+    #endregion
 
+    #region RR
     /// <summary>
     /// STUDENTS: Round Robin algorithm implementation using DataGrid data
     /// Each process gets a time quantum, then cycles to next process
@@ -171,9 +245,20 @@ public static class CPUAlgorithms
     {
         string prevProcess = null;
         var currentTime = 0;
+        int prevTime = 0;
         var processQueue = new Queue<ProcessData>();
         var processResults = new Dictionary<string, SchedulingResult>();
         var remainingBurstTimes = new Dictionary<string, int>();
+
+        var overview = new SchedulingOverview();
+        processResults.Add("-1", overview); // dummy entry for overview
+        overview.StartTime = -1;
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(processes.Sum(p => p.BurstTime));
+        overview.NumTimesSwitched = intervalSize;
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         // Initialize remaining burst times and results
         foreach (var process in processes)
@@ -217,11 +302,23 @@ public static class CPUAlgorithms
 
             var currentProcess = processQueue.Dequeue();
             var result = processResults[currentProcess.ProcessID];
-            
+
             if (prevProcess != null && prevProcess != currentProcess.ProcessID)
             {
                 processResults[prevProcess].NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += currentTime - prevTime;
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
+            prevTime = currentTime;
             prevProcess = currentProcess.ProcessID;
 
             // Set start time if this is the first execution
@@ -258,13 +355,17 @@ public static class CPUAlgorithms
 
         return processResults.Values.OrderBy(r => r.StartTime).ToList();
     }
+    #endregion
 
-
+    #region MLFQ
     // >*** Multilevel Feedback Queue Algorithm ***<
     public static List<SchedulingResult> RunMLFQAlgorithm(List<ProcessData> processes)
     {
         string prevProcess = null;
         var results = new Dictionary<string, SchedulingResult>();
+        SchedulingOverview overview = new SchedulingOverview();
+        results.Add("-1", overview); // dummy entry for overview
+        overview.StartTime = -1;
         var remainingBurst = new Dictionary<string, int>();
 
         // Define 3 queues with different quantum times
@@ -277,6 +378,7 @@ public static class CPUAlgorithms
         var quantums = new[] { 4, 16, 24 };
 
         int currentTime = 0;
+        int prevTime = 0;
         foreach (var process in processes)
         {
             remainingBurst[process.ProcessID] = process.BurstTime;
@@ -291,6 +393,12 @@ public static class CPUAlgorithms
                 TurnaroundTime = 0
             };
         }
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(results.Values.Sum(r => r.BurstTime));
+        overview.NumTimesSwitched = intervalSize; // Storing here for later use
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         // Sort by arrival time initially
         var waitingList = processes.OrderBy(p => p.ArrivalTime).ToList();
@@ -309,6 +417,7 @@ public static class CPUAlgorithms
             if (level == -1)
             {
                 // Jump to next process arrival
+                prevTime = currentTime;
                 currentTime = waitingList[0].ArrivalTime;
                 continue;
             }
@@ -319,6 +428,18 @@ public static class CPUAlgorithms
             if (prevProcess != null && prevProcess != process.ProcessID)
             {
                 results[prevProcess].NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += currentTime - prevTime;
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    // reset for next interval
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
             prevProcess = process.ProcessID;
 
@@ -353,7 +474,9 @@ public static class CPUAlgorithms
 
         return results.Values.OrderBy(r => r.StartTime).ToList();
     }
+    #endregion
 
+    #region CFS
     // >*** Completely Fair Scheduler Algorithm ***<
     public static List<SchedulingResult> RunCFSAlgorithm(List<ProcessData> processes)
     {
@@ -361,6 +484,9 @@ public static class CPUAlgorithms
         const double NICE_0_LOAD = 1024.0; // CFS constant used to scale vruntime increments
         const int targetLatency = 20;      // target latency for the run queue (ms)
         var results = new Dictionary<string, SchedulingResult>();
+        SchedulingOverview overview = new SchedulingOverview();
+        results.Add("-1", overview); // dummy entry for overview
+        overview.StartTime = -1;
         var remaining = new Dictionary<string, int>();
 
         // Initialize
@@ -382,7 +508,14 @@ public static class CPUAlgorithms
         var waiting = processes.OrderBy(p => p.ArrivalTime).ToList();
         var runqueue = new RBTree();
         var vruntimeMap = new Dictionary<string, double>(); // store current vruntime per process
+        double prevTime = 0;
         double currentTime = 0;
+
+        HashSet<string> processesSeenInInterval = new HashSet<string>();
+        int intervalSize = (int)Math.Sqrt(results.Values.Sum(r => r.BurstTime));
+        overview.NumTimesSwitched = intervalSize; // Storing here for later use
+        int unitsPassedSinceInterval = 0;
+        int numIntervalsSeen = 0;
 
         // helper: map priority->weight
         Func<int, double> priorityToWeight = (prio) =>
@@ -408,6 +541,7 @@ public static class CPUAlgorithms
                 // jump to next arrival
                 if (waiting.Count > 0)
                 {
+                    prevTime = currentTime;
                     currentTime = waiting[0].ArrivalTime;
                     continue;
                 }
@@ -435,6 +569,18 @@ public static class CPUAlgorithms
             if (prevProcess != null && prevProcess != pid)
             {
                 results[prevProcess].NumTimesSwitched++;
+                processesSeenInInterval.Add(prevProcess);
+                unitsPassedSinceInterval += (int)(currentTime - prevTime);
+                if (unitsPassedSinceInterval >= intervalSize)
+                {
+                    numIntervalsSeen++;
+                    overview.AverageProcessesServedPerUnitTime =
+                        ((overview.AverageProcessesServedPerUnitTime * (numIntervalsSeen - 1)) +
+                        ((double)processesSeenInInterval.Count / intervalSize)) / numIntervalsSeen;
+                    // reset for next interval
+                    processesSeenInInterval.Clear();
+                    unitsPassedSinceInterval = unitsPassedSinceInterval - intervalSize;
+                }
             }
             prevProcess = pid;
 
@@ -490,4 +636,5 @@ public static class CPUAlgorithms
         // return results ordered by StartTime (similar to your previous style)
         return results.Values.OrderBy(r => r.StartTime).ToList();
     }
+    #endregion
 }

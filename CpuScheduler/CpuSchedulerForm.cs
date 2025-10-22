@@ -240,17 +240,25 @@ Instructions:
             listView1.View = View.Details;
             listView1.Font = new Font("Segoe UI", 12, FontStyle.Regular);
             // Set up columns for detailed results
-            listView1.Columns.Add("Process ID", 175, HorizontalAlignment.Left);
-            listView1.Columns.Add("Arrival", 175, HorizontalAlignment.Left);
+            listView1.Columns.Add("Process ID", 100, HorizontalAlignment.Left);
+            listView1.Columns.Add("Arrival", 215, HorizontalAlignment.Left);
             listView1.Columns.Add("Burst", 175, HorizontalAlignment.Left);
-            listView1.Columns.Add("Start", 175, HorizontalAlignment.Left);
+            listView1.Columns.Add("Start", 240, HorizontalAlignment.Left);
             listView1.Columns.Add("Finish", 175, HorizontalAlignment.Left);
             listView1.Columns.Add("Waiting", 175, HorizontalAlignment.Left);
-            listView1.Columns.Add("Turnaround", 175, HorizontalAlignment.Left);
+            listView1.Columns.Add("Turnaround", 300, HorizontalAlignment.Left);
 
+            double AverageProcessesServedPerUnitTime = 0.0;
+            double TimeIntervalSize = 0.0;
             // Add process results
             foreach (var result in results)
             {
+                if (result.StartTime == -1) // skip overview entry
+                {
+                    AverageProcessesServedPerUnitTime = ((SchedulingOverview)result).AverageProcessesServedPerUnitTime;
+                    TimeIntervalSize = ((SchedulingOverview)result).NumTimesSwitched;
+                    continue;
+                }
                 var item = new ListViewItem(result.ProcessID);
                 item.SubItems.Add(result.ArrivalTime.ToString());
                 item.SubItems.Add(result.BurstTime.ToString());
@@ -274,12 +282,14 @@ Instructions:
             summaryItem.SubItems.Add($"Avg Wait: {avgWaiting:F1}");
             summaryItem.SubItems.Add($"Avg Turn: {avgTurnaround:F1}");
             summaryItem.SubItems.Add($"CPU Utilization: {cpuUtilization:F1}%");
-            summaryItem.SubItems.Add($"Throughput: {throughput:F4} processes/second");
+            summaryItem.SubItems.Add($"Throughput: {throughput:F4} procs/sec");
             listView1.Items.Add(summaryItem);
 
             var summaryItemExt = new ListViewItem("");
-            summaryItemExt.SubItems.Add($"Response Time: {avgResponse:F1} time units");
+            summaryItemExt.SubItems.Add($"Response Time: {avgResponse:F1}");
             summaryItemExt.SubItems.Add($"Context Switches: {results.Sum(r => r.NumTimesSwitched)}");
+            summaryItemExt.SubItems.Add($"Distint Procs Served: {AverageProcessesServedPerUnitTime:F4} per");
+            summaryItemExt.SubItems.Add($"Sqrt of Total Time: {TimeIntervalSize}"); 
             listView1.Items.Add(summaryItemExt);
 
             // TODO: STUDENTS - Add CSV export functionality for results data
