@@ -279,7 +279,7 @@ Instructions:
 
             var summaryItem = new ListViewItem("SUMMARY");
             summaryItem.SubItems.Add(algorithmName);
-            summaryItem.SubItems.Add($"{results.Count} processes");
+            summaryItem.SubItems.Add($"{results.Count - 1} processes");
             summaryItem.SubItems.Add($"Avg Wait: {avgWaiting:F1}");
             summaryItem.SubItems.Add($"Avg Turn: {avgTurnaround:F1}");
             summaryItem.SubItems.Add($"CPU Utilization: {cpuUtilization:F1}%");
