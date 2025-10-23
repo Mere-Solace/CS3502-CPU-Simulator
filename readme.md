@@ -3,6 +3,7 @@
 This project provides a Windows Forms application that demonstrates common CPU scheduling algorithms through an interactive graphical interface. Each algorithm prompts for basic input and displays the resulting waiting or turnaround times using message boxes and on-screen tables.
 
 **Fork maintained by Chris Regan** - Original creator: Francis (used with permission)
+Cloned by Brendan Moore
 
 ## Project status
 
@@ -14,8 +15,12 @@ The simulator is functional but still a work in progress. Currently the followin
 | Shortest Job First | `Algorithms.RunShortestJobFirst` | Jobs are sorted by burst time before execution. |
 | Priority Scheduling | `Algorithms.RunPriorityScheduling` | User supplies a priority value for each job. |
 | Round Robin | `Algorithms.RunRoundRobin` | Requires a quantum time parameter. |
+| Multilevel Feedback Queue | `Algorithms.RunMultilevelFeedbackQueue` | Uses 3 queues each with a predefined quantum time |
+| Completely Fair Scheduler | `Algorithms.RunCompletelyFairScheduler` | Powerful real-world algorithm used in the Linux kernel |
 
 Additional algorithms can easily be added by extending `Algorithms.cs`.
+
+`Algorithms.cs` is now properly used for all Algorithms.
 
 ## Requirements
 

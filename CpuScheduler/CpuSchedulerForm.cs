@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Utilities;
-using CpuScheduler;
 
 namespace CpuScheduler
 {
@@ -289,7 +290,7 @@ Instructions:
             summaryItemExt.SubItems.Add($"Avg Response Time: {avgResponse:F1}");
             summaryItemExt.SubItems.Add($"Context Switches: {results.Sum(r => r.NumTimesSwitched)}");
             summaryItemExt.SubItems.Add($"Distint Procs Served: {AverageProcessesServedPerUnitTime:F4} per >");
-            summaryItemExt.SubItems.Add($"Sqrt of Total Time: {TimeIntervalSize} units"); 
+            summaryItemExt.SubItems.Add($"Sqrt of Total Time: {TimeIntervalSize} units");
             listView1.Items.Add(summaryItemExt);
         }
 
@@ -1033,8 +1034,6 @@ Instructions:
             button.FlatAppearance.MouseOverBackColor = Color.PaleGreen;
         }
 
-
-
         /// <summary>
         /// Executes the Round Robin algorithm using DataGrid data.
         /// STUDENTS: Updated to use GetProcessDataFromGrid() instead of prompts
@@ -1114,86 +1113,95 @@ Instructions:
             }
         }
 
-        private void SaveAllResultsButton_Click(object sender, EventArgs e)
+        private async void SaveAllResultsButton_Click(object sender, EventArgs e)
+        {
+            btnCompareAll.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    RunAllAlgorithmsAndSave();
+                });
+
+                MessageBox.Show("All process data saved successfully!", "Export Complete",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Save Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                btnCompareAll.Enabled = true;
+            }
+        }
+
+        private void RunAllAlgorithmsAndSave()
         {
             var allResults = new List<(string AlgorithmName, List<SchedulingResult> Results)>();
-            double AverageProcessesServedPerUnitTime = 0.0;
-            double TimeIntervalSize = 0.0;
 
             for (int i = 0; i < 6; i++)
             {
-                List<SchedulingResult> results = null;
-                string algorithmName = "";
-
-                switch (i)
+                // run algorithm, collect results — DO NOT call DisplaySchedulingResults here!
+                var data = GetProcessDataFromGrid();
+                List<SchedulingResult> results = i switch
                 {
-                    case 0:
-                        results = CPUAlgorithms.RunFCFSAlgorithm(GetProcessDataFromGrid());
-                        DisplaySchedulingResults(results, "First Come First Serve");
-                        algorithmName = "First Come First Serve";
-                        break;
-                    case 1:
-                        results = CPUAlgorithms.RunSJFAlgorithm(GetProcessDataFromGrid());
-                        DisplaySchedulingResults(results, "Shortest Job First");
-                        algorithmName = "Shortest Job First";
-                        break;
-                    case 2:
-                        results = CPUAlgorithms.RunPriorityAlgorithm(GetProcessDataFromGrid());
-                        DisplaySchedulingResults(results, "Priority Scheduling");
-                        algorithmName = "Priority Scheduling";
-                        break;
-                    case 3:
-                        results = CPUAlgorithms.RunRoundRobinAlgorithm(GetProcessDataFromGrid(), 4);
-                        DisplaySchedulingResults(results, "Round Robin (Quantum = 4)");
-                        algorithmName = "Round Robin (Quantum = 4)";
-                        break;
-                    case 4:
-                        results = CPUAlgorithms.RunMLFQAlgorithm(GetProcessDataFromGrid());
-                        DisplaySchedulingResults(results, "Multilevel Feedback Queue");
-                        algorithmName = "Multilevel Feedback Queue";
-                        break;
-                    case 5:
-                        results = CPUAlgorithms.RunCFSAlgorithm(GetProcessDataFromGrid());
-                        DisplaySchedulingResults(results, "Completely Fair Scheduler");
-                        algorithmName = "Completely Fair Scheduler";
-                        break;
-                }
+                    0 => CPUAlgorithms.RunFCFSAlgorithm(data),
+                    1 => CPUAlgorithms.RunSJFAlgorithm(data),
+                    2 => CPUAlgorithms.RunPriorityAlgorithm(data),
+                    3 => CPUAlgorithms.RunRoundRobinAlgorithm(data, 4),
+                    4 => CPUAlgorithms.RunMLFQAlgorithm(data),
+                    5 => CPUAlgorithms.RunCFSAlgorithm(data),
+                    _ => null
+                };
+                string name = new[] {
+                    "FCFS", "SJF", "Priority", "Round Robin", "MLFQ", "CFS"
+                }[i];
 
-                DisplaySchedulingResults(results, algorithmName);
-                allResults.Add((algorithmName, results));
+                allResults.Add((name, results));
             }
 
-            using (var saveDialog = new SaveFileDialog())
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string fileName = "AlgoData.csv";
+            string path = Path.Combine(desktopPath, fileName);
+
+            // Increment the filename if it already exists
+            int count = 1;
+            while (File.Exists(path))
             {
-                saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
-                saveDialog.DefaultExt = "csv";
-                saveDialog.FileName = "AlgoComparisonData.csv";
-                saveDialog.Title = "Save Algorithm Performance Data";
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+                string extension = Path.GetExtension(fileName);
+                string newFileName = $"{fileNameWithoutExt}({count}){extension}";
+                path = Path.Combine(desktopPath, newFileName);
+                count++;
+            }
 
-                if (saveDialog.ShowDialog() == DialogResult.OK)
+            using (var writer = new StreamWriter(path))
+            {
+                writer.WriteLine("Algo Name,Avg Waiting,Avg Turnaround,Avg Response,CPU Util (%),Throughput,Context Switches,Distinct Procs Served,Interval Size");
+
+                foreach (var (name, results) in allResults)
                 {
-                    using (var writer = new System.IO.StreamWriter(saveDialog.FileName))
-                    {
-                        writer.WriteLine("Algo Name,Avg Waiting Time,Avg Turnaround Time,Avg Response Time,CPU Utilization (%),Throughput (procs/sec),Context Switches,Distinct Procs Served,Time Interval Size");
+                    if (results == null || results.Count == 0) continue;
 
-                        foreach (var (algorithmName, results) in allResults)
-                        {
-                            var avgWaiting = results.Average(r => r.WaitingTime);
-                            var avgTurnaround = results.Average(r => r.TurnaroundTime);
-                            var avgResponse = PerformanceMetrics.CalculateAverageResponseTime(results);
-                            var cpuUtilization = PerformanceMetrics.CalculateCPUUtilization(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
-                            var throughput = PerformanceMetrics.CalculateThroughput(results, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
-                            var overview = (SchedulingOverview)results.First();
-                            writer.WriteLine($"{algorithmName},{avgWaiting:F1},{avgTurnaround:F1},{avgResponse:F1},{cpuUtilization:F1},{throughput:F4},{results.Sum(r => r.NumTimesSwitched)},{overview.AverageProcessesServedPerUnitTime:F4},{overview.NumTimesSwitched}");
-                        }
-                    }
+                    int totalTime = Math.Max(1, results.Max(r => r.FinishTime) - results.Min(r => r.ArrivalTime));
+                    var avgWaiting = results.Average(r => r.WaitingTime);
+                    var avgTurnaround = results.Average(r => r.TurnaroundTime);
+                    var avgResponse = PerformanceMetrics.CalculateAverageResponseTime(results);
+                    var cpuUtil = PerformanceMetrics.CalculateCPUUtilization(results, totalTime);
+                    var throughput = PerformanceMetrics.CalculateThroughput(results, totalTime);
+                    var overview = results.OfType<SchedulingOverview>().FirstOrDefault();
 
-                    MessageBox.Show($"All process data saved successfully to:\n{saveDialog.FileName}",
-                                    "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    writer.WriteLine($"{name},{avgWaiting:F1},{avgTurnaround:F1},{avgResponse:F1},{cpuUtil:F1},{throughput:F4},{results.Sum(r => r.NumTimesSwitched)},{overview?.AverageProcessesServedPerUnitTime:F4},{overview?.NumTimesSwitched}");
                 }
             }
         }
     }
+
     
     /// <summary>
     /// STUDENTS: Custom button class with rounded edges for modern UI appearance

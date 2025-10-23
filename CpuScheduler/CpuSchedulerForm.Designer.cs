@@ -556,7 +556,7 @@
             this.btnCompareAll.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
             this.btnCompareAll.Name = "btnCompareAll";
             this.btnCompareAll.Size = new System.Drawing.Size(150, 60);
-            this.btnCompareAll.TabIndex = 10;
+            this.btnCompareAll.TabIndex = 28;
             this.btnCompareAll.Text = "Compare All Algorithms & Save to CSV";
             this.btnCompareAll.UseVisualStyleBackColor = false;
             this.btnCompareAll.Click += new System.EventHandler(this.SaveAllResultsButton_Click);

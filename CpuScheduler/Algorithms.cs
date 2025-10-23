@@ -376,9 +376,9 @@ public static class CPUAlgorithms
         // Define 3 queues with different quantum times
         var queues = new List<Queue<ProcessData>>
     {
-        new Queue<ProcessData>(), // High priority
+        new Queue<ProcessData>(), // Low
         new Queue<ProcessData>(), // Medium
-        new Queue<ProcessData>()  // Low
+        new Queue<ProcessData>()  // High
     };
         var quantums = new[] { 4, 16, 24 };
 
@@ -473,7 +473,7 @@ public static class CPUAlgorithms
             }
             else
             {
-                // Process not finished — move to lower queue (if not lowest)
+                // Process not finished — move to higher-priority queue (if not highest)
                 int nextLevel = Math.Min(level + 1, queues.Count - 1);
                 queues[nextLevel].Enqueue(process);
             }
@@ -527,9 +527,9 @@ public static class CPUAlgorithms
         // helper: map priority->weight
         Func<int, double> priorityToWeight = (prio) =>
         {
-            // if priority is small=high priority: use (21-prio)
+            // if priority is small => high priority: use (21-prio)
             var p = Math.Max(1, Math.Min(20, prio));
-            return (double)(21 - p);
+            return 21 - p;
         };
 
         while (!runqueue.IsEmpty || waiting.Count > 0)
@@ -557,10 +557,11 @@ public static class CPUAlgorithms
 
             // compute total weight of all runnable processes
             double totalWeight = 0;
-            // naive walk: we can sum weights by iterating waiting & tree - instead, compute by scanning results/remaining
+            // naive walk: we can sum weights by iterating waiting & tree 
+            // - instead, compute by scanning results/remaining
             foreach (var kv in remaining)
             {
-                if (kv.Value > 0)
+                if (kv.Value > 0) // 
                 {
                     // lookup priority from processes list
                     var p = processes.First(pr => pr.ProcessID == kv.Key);
@@ -618,7 +619,8 @@ public static class CPUAlgorithms
 
             // increment vruntime for this process
             // delta_vruntime = exec * (NICE_0_LOAD / weight)
-            // this means heavier (larger weight) processes accumulate vruntime slower, getting more CPU share.
+            // this means heavier (larger weight) processes 
+            // accumulate vruntime slower, getting more CPU share.
             var deltaV = exec * (NICE_0_LOAD / weight);
             vruntimeMap[pid] = procV + deltaV;
 
